@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Busca de Torrents</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <header>
+        <h1>Busca de Torrents</h1>
+    </header>
+    <div class="container">
+        <div class="search-box">
+            <input type="text" id="search-query" placeholder="Digite o nome para buscar...">
+            <button onclick="searchTorrents()">Buscar</button>
+        </div>
+        <div class="loading" id="loading-message" style="display: none;">Pesquisando por torrents...</div>
+        <table id="results-table" style="display: none;">
+            <thead>
+                <tr>
+                    <th>Nome</th>
+                    <th>Tamanho</th>
+                    <th>Seeders</th>
+                    <th>Leechers</th>
+                    <th>Magnet Link</th>
+                </tr>
+            </thead>
+            <tbody id="results-body"></tbody>
+        </table>
+    </div>
+
+    <script>
+        async function searchTorrents() {
+            const query = document.getElementById('search-query').value;
+            if (!query) {
+                alert('Por favor, insira um nome para buscar.');
+                return;
+            }
+
+            document.getElementById('loading-message').style.display = 'block';
+
+            try {
+                const response = await fetch(`/search?query=${encodeURIComponent(query)}`);
+                if (!response.ok) {
+                    throw new Error('Erro na busca de torrents');
+                }
+
+                const torrents = await response.json();
+                const resultsBody = document.getElementById('results-body');
+                resultsBody.innerHTML = '';
+
+                torrents.forEach(torrent => {
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td>${torrent.name || 'N/A'}</td>
+                        <td>${torrent.size || 'N/A'}</td>
+                        <td>${torrent.seeders || 'N/A'}</td>
+                        <td>${torrent.leechers || 'N/A'}</td>
+                        <td><a href="magnet:?xt=urn:btih:${torrent.hash || ''}" target="_blank">Baixar</a></td>
+                    `;
+                    resultsBody.appendChild(row);
+                });
+
+                document.getElementById('results-table').style.display = torrents.length ? 'table' : 'none';
+            } catch (err) {
+                alert('Erro: ' + err.message);
+            } finally {
+                document.getElementById('loading-message').style.display = 'none';
+            }
+        }
+    </script>
+</body>
+</html>
