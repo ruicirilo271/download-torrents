@@ -1,8 +1,8 @@
 <!DOCTYPE html>
 <html lang="pt">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Busca de Torrents</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
@@ -12,7 +12,7 @@
     </header>
     <div class="container">
         <div class="search-box">
-            <input type="text" id="search-query" placeholder="Digite o nome para buscar...">
+            <input type="text" id="search-query" placeholder="Digite o nome para buscar..." />
             <button onclick="searchTorrents()">Buscar</button>
         </div>
         <div class="loading" id="loading-message" style="display: none;">Pesquisando por torrents...</div>
@@ -32,41 +32,59 @@
 
     <script>
         async function searchTorrents() {
-            const query = document.getElementById('search-query').value;
+            const query = document.getElementById('search-query').value.trim();
             if (!query) {
                 alert('Por favor, insira um nome para buscar.');
                 return;
             }
 
-            document.getElementById('loading-message').style.display = 'block';
+            const loadingMessage = document.getElementById('loading-message');
+            const resultsTable = document.getElementById('results-table');
+            const resultsBody = document.getElementById('results-body');
+
+            loadingMessage.style.display = 'block';
+            resultsTable.style.display = 'none';
+            resultsBody.innerHTML = '';
 
             try {
                 const response = await fetch(`/search?query=${encodeURIComponent(query)}`);
                 if (!response.ok) {
-                    throw new Error('Erro na busca de torrents');
+                    const errorText = await response.text();
+                    throw new Error(`Erro na busca de torrents: ${errorText}`);
                 }
 
                 const torrents = await response.json();
-                const resultsBody = document.getElementById('results-body');
-                resultsBody.innerHTML = '';
+
+                if (!Array.isArray(torrents) || torrents.length === 0) {
+                    resultsBody.innerHTML = `<tr><td colspan="5">Nenhum resultado encontrado.</td></tr>`;
+                    resultsTable.style.display = 'table';
+                    return;
+                }
 
                 torrents.forEach(torrent => {
                     const row = document.createElement('tr');
+
+                    const magnetLink = torrent.magnet || (torrent.hash ? `magnet:?xt=urn:btih:${torrent.hash}` : null);
+                    const magnetHTML = magnetLink
+                        ? `<a href="${magnetLink}" target="_blank">Baixar</a>`
+                        : 'Indisponível';
+
                     row.innerHTML = `
                         <td>${torrent.name || 'N/A'}</td>
                         <td>${torrent.size || 'N/A'}</td>
-                        <td>${torrent.seeders || 'N/A'}</td>
-                        <td>${torrent.leechers || 'N/A'}</td>
-                        <td><a href="magnet:?xt=urn:btih:${torrent.hash || ''}" target="_blank">Baixar</a></td>
+                        <td>${torrent.seeders || '0'}</td>
+                        <td>${torrent.leechers || '0'}</td>
+                        <td>${magnetHTML}</td>
                     `;
                     resultsBody.appendChild(row);
                 });
 
-                document.getElementById('results-table').style.display = torrents.length ? 'table' : 'none';
+                resultsTable.style.display = 'table';
             } catch (err) {
                 alert('Erro: ' + err.message);
+                console.error(err);
             } finally {
-                document.getElementById('loading-message').style.display = 'none';
+                loadingMessage.style.display = 'none';
             }
         }
     </script>
