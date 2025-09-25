@@ -3,7 +3,7 @@ import requests
 
 app = Flask(__name__)
 
-API_URL = "https://torrent-api-py-nx0x.onrender.com/api/v1/all/search"
+API_URL = "https://torrent-api-py-etoj.onrender.com/api/v1/all/search"
 
 @app.route('/')
 def index():
@@ -25,4 +25,5 @@ def search():
 
 if __name__ == '__main__':
     app.run(debug=True)
+
 
